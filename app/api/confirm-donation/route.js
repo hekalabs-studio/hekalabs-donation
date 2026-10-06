@@ -150,7 +150,8 @@ export async function POST(request) {
 
     // 6. Gmail App Password from Environment
     const gmailUser = process.env.GMAIL_USER || 'hekoding@gmail.com';
-    const gmailPass = process.env.GMAIL_APP_PASSWORD;
+    const rawPass = process.env.GMAIL_APP_PASSWORD || '';
+    const gmailPass = rawPass.replace(/\s+/g, '');
 
     if (!gmailPass) {
       console.error('GMAIL_APP_PASSWORD environment variable is not configured.');
@@ -164,7 +165,9 @@ export async function POST(request) {
     }
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: gmailUser,
         pass: gmailPass
@@ -272,10 +275,17 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error processing donation API route:', error);
+    let errorDetail = 'Gagal memproses konfirmasi donasi atau mengirim email. Mohon coba lagi.';
+    if (error.code === 'EAUTH') {
+      errorDetail = 'Autentikasi Gmail ditolak oleh Google (535 Bad Credentials). Pastikan App Password 16 huruf dibuat khusus untuk akun ' + (process.env.GMAIL_USER || 'hekoding@gmail.com') + ' dengan 2-Step Verification aktif.';
+    } else if (error.message) {
+      errorDetail = `Kendala email: ${error.message}`;
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Gagal memproses konfirmasi donasi atau mengirim email. Mohon coba lagi.'
+        error: errorDetail
       },
       { status: 500 }
     );
