@@ -26,6 +26,9 @@ function formatBytes(bytes, decimals = 1) {
 }
 
 export default function Home() {
+  // Theme state (Dark Mode matching hekaportfolio.web.app)
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   // Form state
   const [donorName, setDonorName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -52,72 +55,30 @@ export default function Home() {
   const [copiedNmid, setCopiedNmid] = useState(false);
 
   const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
 
-  // Handle ambient particle canvas
+  // Initialize theme from localStorage / system preference
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'enabled') {
+      document.body.classList.add('dark-mode');
+      setIsDarkMode(true);
+    } else if (saved === 'disabled') {
+      document.body.classList.remove('dark-mode');
+      setIsDarkMode(false);
     }
-
-    const ctx = canvas.getContext('2d');
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-    let animationFrameId;
-
-    const PARTICLE_COUNT = 45;
-    const particles = [];
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        radius: Math.random() * 1.2 + 0.3,
-        speedX: (Math.random() - 0.5) * 0.15,
-        speedY: (Math.random() - 0.5) * 0.15,
-        alpha: Math.random() * 0.5 + 0.2,
-      });
-    }
-
-    function render() {
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#FFFFFF';
-
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        p.x += p.speedX;
-        p.y += p.speedY;
-
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-
-        ctx.globalAlpha = p.alpha;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    }
-
-    function handleResize() {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    }
-
-    window.addEventListener('resize', handleResize);
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', handleResize);
-    };
   }, []);
+
+  const toggleDarkMode = () => {
+    const nextState = !isDarkMode;
+    setIsDarkMode(nextState);
+    if (nextState) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('darkMode', 'enabled');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('darkMode', 'disabled');
+    }
+  };
 
   // Copy NMID
   const handleCopyNmid = async () => {
@@ -263,7 +224,7 @@ export default function Home() {
     }
 
     if (!compressedDataUrl) {
-      errs.proof = 'Wajib melampirkan bukti transfer pembayaran.';
+      errs.proof = 'Wajib melampirkan foto bukti pembayaran.';
     }
 
     setErrors(errs);
@@ -307,7 +268,7 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Terjadi kesalahan saat mengirim konfirmasi.');
+        throw new Error(data.error || 'Terjadi kendala saat mengirim konfirmasi.');
       }
 
       setSubmittedData({
@@ -340,220 +301,201 @@ export default function Home() {
 
   return (
     <>
-      {/* Ambient background canvas and gradient */}
-      <div className="ambient-glow" aria-hidden="true" />
-      <canvas ref={canvasRef} className="ambient-canvas" aria-hidden="true" />
-
-      {/* Header */}
+      {/* Site Header */}
       <header className="site-header">
         <div className="container header-inner">
-          <a href="#" className="brand-badge" aria-label="HekaLabs Beranda">
-            <span className="brand-text">HEKALABS ™</span>
-            <span className="status-indicator">
-              <span className="pulse-dot" aria-hidden="true" />
-              <span className="status-text">01 // LIVE GATEWAY</span>
-            </span>
+          <a href="#" className="brand-wrapper" aria-label="HekaLabs Beranda">
+            <span className="brand-title">HEKA</span>
+            <span className="brand-sub">Donasi &amp; Dukungan</span>
           </a>
 
           <nav className="nav-links" aria-label="Navigasi Halaman">
-            <a href="#hero" className="nav-link">Tentang</a>
+            <a href="#hero" className="nav-link">Home</a>
             <a href="#qris-section" className="nav-link">QRIS</a>
             <a href="#form-section" className="nav-link">Konfirmasi</a>
-            <a href="#social-section" className="nav-link">Koneksi</a>
+            <a href="#social-section" className="nav-link">Medsos</a>
+            <a
+              href="https://hekaportfolio.web.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link"
+            >
+              Portfolio ↗
+            </a>
           </nav>
 
-          <div className="header-action">
-            <a href="#qris-section" className="btn-pill btn-pill-primary">
-              <span>Donasi Sekarang</span>
-              <svg className="icon-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+          <div className="header-actions">
+            {/* Dark Mode Toggle (Matching Heka Portfolio) */}
+            <button
+              type="button"
+              id="dark-mode-toggle"
+              className="dark-mode-btn"
+              onClick={toggleDarkMode}
+              aria-label="Ganti mode gelap/terang"
+              title="Mode gelap / terang"
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
+
+            <a href="#qris-section" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+              <span>Donasi</span>
             </a>
           </div>
         </div>
       </header>
 
       <main>
-        {/* Section 1: Hero */}
+        {/* HERO SECTION */}
         <section id="hero" className="hero-section">
           <div className="container">
-            <div className="hero-meta-strip">
-              <span className="tech-tag">EST. 2025 // THE NEW FRONTIER</span>
-              <span className="separator-dot" aria-hidden="true">•</span>
-              <span className="tech-tag">QRIS NASIONAL // ID1023245869376</span>
-              <span className="separator-dot" aria-hidden="true">•</span>
-              <span className="tech-tag">100% INDEPENDEN</span>
-            </div>
-
-            <div className="hero-headline-wrap">
-              <h1 className="hero-title">
-                <span className="title-line">HEKALABS ™</span>
-              </h1>
-              <p className="hero-lead">
-                Dukungan langsung untuk riset kreatif dan karya digital Heka — memberdayakan pengembangan{' '}
-                <strong className="highlight-text">Heka Edit</strong>, video edukasi{' '}
-                <strong className="highlight-text">Heka Edu</strong>, serta rangkaian proyek perangkat lunak{' '}
-                <strong className="highlight-text">open source</strong> untuk semua.
-              </p>
-            </div>
+            <span className="hero-greeting">Hey There</span>
+            <h1 className="hero-title">
+              Dukungan Karya &amp; Donasi <span className="highlight">HekaLabs</span>
+            </h1>
+            <p className="hero-role">Web Development • Video Editing • Open Source</p>
+            <p className="hero-desc">
+              Saya <strong>Novemas Heka Alfarizi</strong>. Halaman ini adalah saluran donasi resmi untuk mendukung
+              pengembangan aplikasi <strong>Heka Edit</strong>, pembuatan materi edukasi coding <strong>Heka Edu</strong>,
+              serta pemeliharaan berbagai proyek open source gratis untuk masyarakat luas.
+            </p>
 
             <div className="hero-actions">
-              <a href="#qris-section" className="btn-primary" id="cta-donate-btn">
-                <span>Donasi Sekarang</span>
+              <a href="#qris-section" className="btn btn-primary">
+                <span>Scan QRIS Sekarang</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></svg>
               </a>
-              <a href="#form-section" className="btn-secondary" id="cta-confirm-btn">
-                <span>Konfirmasi Bukti Transfer</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="9" x2="15" y2="9" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></svg>
+              <a href="#form-section" className="btn btn-outline">
+                <span>Konfirmasi Bukti Pembayaran</span>
               </a>
             </div>
 
-            <div className="hero-badges">
-              <div className="meta-card">
-                <span className="meta-label">TRANSAKSI LANGSUNG</span>
-                <span className="meta-value">Tanpa Potongan Pihak Ketiga</span>
+            <div className="hero-badges-row">
+              <div className="stat-badge-card">
+                <span className="stat-badge-title">TRANSAKSI LANGSUNG</span>
+                <span className="stat-badge-desc">100% Bebas Biaya Potongan</span>
               </div>
-              <div className="meta-card">
-                <span className="meta-label">KOMPATIBILITAS PENUH</span>
-                <span className="meta-value">Semua Bank &amp; E-Wallet QRIS</span>
+              <div className="stat-badge-card">
+                <span className="stat-badge-title">STANDAR NASIONAL</span>
+                <span className="stat-badge-desc">Semua Bank &amp; E-Wallet QRIS</span>
               </div>
-              <div className="meta-card">
-                <span className="meta-label">VERIFIKASI TRANSPARAN</span>
-                <span className="meta-value">Notifikasi Email Otomatis</span>
+              <div className="stat-badge-card">
+                <span className="stat-badge-title">NOTIFIKASI OTOMATIS</span>
+                <span className="stat-badge-desc">Diverifikasi &amp; Masuk ke Email</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Bento Grid */}
-        <section className="bento-section" id="bento-container">
+        {/* MAIN CONTENT GRID */}
+        <section className="main-content-section" id="content-container">
           <div className="container">
-            <div className="bento-grid">
+            <div className="main-grid">
 
-              {/* BENTO ITEM 1: KARTU QRIS (Focal Point) */}
-              <article className="bento-card bento-qris-card" id="qris-section">
-                <div className="qris-card-inner">
-                  <div className="qris-card-header">
-                    <div className="qris-header-left">
-                      <span className="qris-mono-tag">01-A. // QRIS GATEWAY</span>
-                      <div className="qris-merchant-badge">
-                        <span className="merchant-dot" />
-                        <span className="merchant-name-title">HekaStore</span>
+              {/* ITEM 1: KARTU QRIS */}
+              <article className="content-card qris-card grid-qris-col" id="qris-section">
+                <div className="card-header-simple">
+                  <div>
+                    <h2 className="card-title-sm">QRIS HekaStore</h2>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Scan untuk melakukan donasi</span>
+                  </div>
+                  <div className="qris-badge-official">
+                    <span className="qris-red">QRIS</span>
+                    <span className="qris-gpn">GPN</span>
+                  </div>
+                </div>
+
+                {/* QR Code Container */}
+                <div className="qris-quiet-zone">
+                  <div className="qris-image-wrap">
+                    <Image
+                      src="/assets/qris.jpeg"
+                      alt="Kode QRIS Donasi HekaStore NMID ID1023245869376"
+                      width={420}
+                      height={560}
+                      className="qris-img"
+                      priority
+                    />
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="qris-details">
+                  <div className="qris-row">
+                    <span className="qris-kicker">Merchant:</span>
+                    <span className="qris-val">HekaStore</span>
+                  </div>
+                  <div className="qris-row">
+                    <span className="qris-kicker">NMID:</span>
+                    <div className="nmid-wrap">
+                      <code className="nmid-code">ID1023245869376</code>
+                      <button
+                        type="button"
+                        className="btn-copy-small"
+                        onClick={handleCopyNmid}
+                        title="Salin NMID"
+                      >
+                        {copiedNmid ? 'Tersalin!' : 'Salin'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="qris-slogan-box">
+                    <strong>SATU QRIS UNTUK SEMUA</strong>
+                    Mendukung BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, ShopeePay, LinkAja, dan bank lainnya.
+                  </div>
+                </div>
+
+                {/* Download */}
+                <a
+                  href="/assets/qris.jpeg"
+                  download="qris-hekalabs-hekastore.jpeg"
+                  className="btn-download-qr"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  <span>Unduh Gambar QR</span>
+                </a>
+
+                {/* 3 Step Guide */}
+                <div className="guide-steps">
+                  <h4>Panduan Pembayaran (3 Langkah)</h4>
+                  <ol className="steps-list">
+                    <li className="step-item">
+                      <span className="step-num">1</span>
+                      <div>
+                        <strong>Buka Aplikasi</strong>
+                        <p>Buka m-Banking atau e-Wallet favorit Anda yang mendukung QRIS.</p>
                       </div>
-                    </div>
-                    <div className="qris-header-right">
-                      <span className="qris-official-badge">
-                        <span className="qris-logo-text">QRIS</span>
-                        <span className="gpn-logo-text">GPN</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Quiet zone container */}
-                  <div className="qris-quiet-zone">
-                    <div className="qris-image-wrapper">
-                      <Image
-                        src="/assets/qris.jpeg"
-                        alt="Kode QRIS Donasi HekaStore NMID ID1023245869376"
-                        width={420}
-                        height={560}
-                        className="qris-image"
-                        priority
-                      />
-                    </div>
-                  </div>
-
-                  {/* Merchant Details & NMID */}
-                  <div className="qris-details-block">
-                    <div className="qris-detail-row">
-                      <span className="qris-meta-kicker">NAMA MERCHANT</span>
-                      <span className="qris-meta-text bold">HekaStore</span>
-                    </div>
-                    <div className="qris-detail-row">
-                      <span className="qris-meta-kicker">NMID RESMI</span>
-                      <div className="nmid-copy-group">
-                        <code className="nmid-code">ID1023245869376</code>
-                        <button
-                          type="button"
-                          className="btn-copy-nmid"
-                          onClick={handleCopyNmid}
-                          title="Salin NMID"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                          <span>{copiedNmid ? 'Tersalin!' : 'Salin'}</span>
-                        </button>
+                    </li>
+                    <li className="step-item">
+                      <span className="step-num">2</span>
+                      <div>
+                        <strong>Scan &amp; Cek Merchant</strong>
+                        <p>Arahkan kamera ke QR di atas dan pastikan nama penerima: <strong>HekaStore</strong>.</p>
                       </div>
-                    </div>
-                    <div className="qris-detail-slogan">
-                      <span className="slogan-badge">SATU QRIS UNTUK SEMUA</span>
-                      <p className="slogan-sub">Bisa di-scan dari BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, ShopeePay, LinkAja, dsb.</p>
-                    </div>
-                  </div>
-
-                  {/* Download Button */}
-                  <div className="qris-actions">
-                    <a
-                      href="/assets/qris.jpeg"
-                      download="qris-hekalabs-hekastore.jpeg"
-                      className="btn-qris-download"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                      <span>Unduh Gambar QR</span>
-                    </a>
-                  </div>
-
-                  {/* 3 Steps Instructions */}
-                  <div className="qris-guide-box">
-                    <div className="guide-title">
-                      <span className="guide-tag">// PANDUAN PEMBAYARAN</span>
-                      <span className="guide-step-count">3 Langkah Mudah</span>
-                    </div>
-                    <ol className="guide-steps-list">
-                      <li className="guide-step-item">
-                        <span className="step-num">01</span>
-                        <div className="step-desc">
-                          <strong>Buka Aplikasi</strong>
-                          <p>Jalankan aplikasi m-Banking atau E-Wallet apa pun yang memiliki fitur scan QRIS.</p>
-                        </div>
-                      </li>
-                      <li className="guide-step-item">
-                        <span className="step-num">02</span>
-                        <div className="step-desc">
-                          <strong>Scan &amp; Periksa</strong>
-                          <p>Arahkan kamera ke QR di atas. Pastikan nama merchant yang muncul adalah <strong>HekaStore</strong>.</p>
-                        </div>
-                      </li>
-                      <li className="guide-step-item">
-                        <span className="step-num">03</span>
-                        <div className="step-desc">
-                          <strong>Bayar &amp; Simpan Bukti</strong>
-                          <p>Ketik jumlah donasi, konfirmasi PIN Anda, lalu simpan tangkapan layar (screenshot) bukti transfer.</p>
-                        </div>
-                      </li>
-                    </ol>
-                  </div>
+                    </li>
+                    <li className="step-item">
+                      <span className="step-num">3</span>
+                      <div>
+                        <strong>Masukkan Nominal &amp; Bayar</strong>
+                        <p>Ketik nominal donasi, konfirmasi PIN Anda, lalu simpan screenshot bukti pembayaran.</p>
+                      </div>
+                    </li>
+                  </ol>
                 </div>
               </article>
 
-              {/* BENTO ITEM 2: FORM KONFIRMASI DONASI */}
-              <article className="bento-card bento-form-card" id="form-section">
-                <div className="form-card-header">
-                  <div className="form-header-meta">
-                    <span className="tech-tag">02-B. // KONFIRMASI DONASI</span>
-                    <span className="badge-accent">VERIFIKASI</span>
-                  </div>
-                  <h2 className="card-heading">Form Konfirmasi Pembayaran</h2>
-                  <p className="card-subheading">
-                    Sudah melakukan transfer? Isi formulir di bawah ini agar donasi Anda tercatat dan tim HekaLabs dapat menyampaikan apresiasi.
-                  </p>
+              {/* ITEM 2: FORM KONFIRMASI PEMBAYARAN */}
+              <article className="content-card grid-form-col" id="form-section">
+                <div className="form-header">
+                  <h2>Form Konfirmasi Pembayaran</h2>
+                  <p>Sudah transfer? Kirimkan bukti di sini agar tercatat dan kami dapat menyampaikan terima kasih.</p>
                 </div>
 
                 {!isSubmitted ? (
                   <form onSubmit={handleSubmit} className="donation-form" noValidate>
-                    {/* Honeypot trap */}
-                    <div className="hp-trap" aria-hidden="true">
-                      <label htmlFor="website_hp">Jangan isi field ini:</label>
+                    {/* Honeypot field */}
+                    <div style={{ position: 'absolute', left: '-9999px', opacity: 0 }}>
                       <input
                         type="text"
-                        id="website_hp"
                         name="website_hp"
                         tabIndex={-1}
                         autoComplete="off"
@@ -562,61 +504,55 @@ export default function Home() {
                       />
                     </div>
 
-                    {/* Field 1: Nama */}
+                    {/* Nama */}
                     <div className="form-group">
                       <div className="label-row">
                         <label htmlFor="donor-name" className="form-label">
-                          Nama Donatur <span className="required-mark">*</span>
+                          Nama Donatur <span className="req-star">*</span>
                         </label>
                         <span className="label-hint">2–60 karakter</span>
                       </div>
-                      <div className="input-wrapper">
+                      <input
+                        type="text"
+                        id="donor-name"
+                        className="form-input"
+                        placeholder="Contoh: Budi Santoso / Nova"
+                        minLength={2}
+                        maxLength={60}
+                        value={donorName}
+                        onChange={(e) => {
+                          setDonorName(e.target.value);
+                          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+                        }}
+                        required
+                        autoComplete="name"
+                      />
+                      <label className="checkbox-line" htmlFor="is-anonymous">
                         <input
-                          type="text"
-                          id="donor-name"
-                          className="form-input"
-                          placeholder="Contoh: Budi Santoso / Nova"
-                          minLength={2}
-                          maxLength={60}
-                          value={donorName}
-                          onChange={(e) => {
-                            setDonorName(e.target.value);
-                            if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
-                          }}
-                          required
-                          autoComplete="name"
+                          type="checkbox"
+                          id="is-anonymous"
+                          checked={isAnonymous}
+                          onChange={(e) => setIsAnonymous(e.target.checked)}
                         />
-                      </div>
-                      <div className="checkbox-wrapper">
-                        <label className="custom-checkbox-label" htmlFor="is-anonymous">
-                          <input
-                            type="checkbox"
-                            id="is-anonymous"
-                            className="custom-checkbox-input"
-                            checked={isAnonymous}
-                            onChange={(e) => setIsAnonymous(e.target.checked)}
-                          />
-                          <span className="checkbox-custom" aria-hidden="true" />
-                          <span className="checkbox-text">Tampilkan sebagai donatur anonim (nama dirahasiakan di publik)</span>
-                        </label>
-                      </div>
-                      {errors.name && <div className="field-error visible">{errors.name}</div>}
+                        <span>Tampilkan sebagai donatur anonim (nama dirahasiakan di publik)</span>
+                      </label>
+                      {errors.name && <div className="field-error-msg">{errors.name}</div>}
                     </div>
 
-                    {/* Field 2: Nominal */}
+                    {/* Nominal */}
                     <div className="form-group">
                       <div className="label-row">
                         <label htmlFor="donor-amount" className="form-label">
-                          Nominal Donasi (IDR) <span className="required-mark">*</span>
+                          Nominal Donasi (IDR) <span className="req-star">*</span>
                         </label>
                         <span className="label-hint">Minimum Rp 1.000</span>
                       </div>
-                      <div className="input-wrapper input-with-icon">
-                        <span className="input-prefix" aria-hidden="true">Rp</span>
+                      <div className="input-with-rp">
+                        <span className="input-rp-badge">Rp</span>
                         <input
                           type="text"
                           id="donor-amount"
-                          className="form-input input-currency"
+                          className="form-input"
                           placeholder="Contoh: 25.000"
                           inputMode="numeric"
                           value={amountInput}
@@ -626,35 +562,32 @@ export default function Home() {
                       </div>
 
                       {/* Quick Chips */}
-                      <div className="amount-chips-wrapper">
-                        <span className="chips-title">PILIH CEPAT:</span>
-                        <div className="chips-list" role="group" aria-label="Pilihan Nominal Cepat">
-                          {QUICK_AMOUNTS.map((amt) => (
-                            <button
-                              key={amt}
-                              type="button"
-                              className={`amount-chip ${numericAmount === amt ? 'active' : ''}`}
-                              onClick={() => handleChipSelect(amt)}
-                            >
-                              Rp {formatRupiah(amt)}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="chips-group">
+                        {QUICK_AMOUNTS.map((amt) => (
+                          <button
+                            key={amt}
+                            type="button"
+                            className={`amount-chip ${numericAmount === amt ? 'active' : ''}`}
+                            onClick={() => handleChipSelect(amt)}
+                          >
+                            Rp {formatRupiah(amt)}
+                          </button>
+                        ))}
                       </div>
-                      {errors.amount && <div className="field-error visible">{errors.amount}</div>}
+                      {errors.amount && <div className="field-error-msg">{errors.amount}</div>}
                     </div>
 
-                    {/* Field 3: Upload Bukti */}
+                    {/* Bukti Transfer */}
                     <div className="form-group">
                       <div className="label-row">
-                        <label className="form-label" id="proof-label">
-                          Bukti Pembayaran <span className="required-mark">*</span>
+                        <label className="form-label">
+                          Bukti Pembayaran <span className="req-star">*</span>
                         </label>
                         <span className="label-hint">JPG, PNG, WEBP (Maks 5 MB)</span>
                       </div>
 
                       <div
-                        className={`dropzone-area ${isDragging ? 'drag-over' : ''} ${selectedFile ? 'has-file' : ''}`}
+                        className={`dropzone ${isDragging ? 'dragover' : ''}`}
                         onClick={() => fileInputRef.current?.click()}
                         onDragOver={(e) => {
                           e.preventDefault();
@@ -664,26 +597,23 @@ export default function Home() {
                         onDrop={handleDrop}
                         role="button"
                         tabIndex={0}
-                        aria-labelledby="proof-label"
                       >
                         <input
                           type="file"
                           ref={fileInputRef}
                           accept="image/jpeg,image/png,image/webp"
-                          className="file-input-hidden"
+                          style={{ display: 'none' }}
                           onChange={handleFileChange}
                         />
 
                         {!selectedFile ? (
-                          <div className="dropzone-content">
-                            <div className="dropzone-icon" aria-hidden="true">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                            </div>
-                            <div className="dropzone-text">
-                              <span className="dropzone-primary-text">Klik untuk memilih file</span> atau seret gambar ke sini
-                            </div>
-                            <span className="dropzone-subtext">
-                              {isCompressing ? 'Sedang mengompres gambar...' : 'Format: JPG, PNG, atau WEBP (Maksimal 5 MB)'}
+                          <div className="dropzone-prompt">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                            <p className="dropzone-prompt-text">
+                              <strong>Pilih gambar</strong> atau seret bukti transfer ke sini
+                            </p>
+                            <span className="dropzone-hint">
+                              {isCompressing ? 'Sedang mengompres gambar...' : 'Format: JPG, PNG, atau WEBP'}
                             </span>
                           </div>
                         ) : (
@@ -691,364 +621,277 @@ export default function Home() {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={compressedDataUrl}
-                              alt="Preview Bukti Pembayaran"
-                              className="preview-thumbnail"
+                              alt="Bukti Transfer"
+                              className="preview-thumb"
                             />
-                            <div className="preview-info">
-                              <span className="preview-filename">{selectedFile.name}</span>
-                              <span className="preview-filesize">
-                                Asli: {formatBytes(selectedFile.size)} → Hasil: {formatBytes(compressedSizeBytes)}
-                              </span>
-                              <span className="preview-compressed-badge">Terkonversi Optimal</span>
+                            <div className="preview-meta">
+                              <div className="preview-name">{selectedFile.name}</div>
+                              <div className="preview-size">
+                                Asli: {formatBytes(selectedFile.size)} ➔ Optimal: {formatBytes(compressedSizeBytes)}
+                              </div>
+                              <span className="preview-opt-badge">✓ Terkonversi Optimal</span>
                             </div>
                             <button
                               type="button"
-                              className="btn-remove-preview"
+                              className="btn-remove-thumb"
                               onClick={handleRemoveFile}
                               title="Hapus gambar"
                             >
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                              <span className="sr-only">Hapus gambar</span>
+                              ✕
                             </button>
                           </div>
                         )}
                       </div>
-                      {errors.proof && <div className="field-error visible">{errors.proof}</div>}
+                      {errors.proof && <div className="field-error-msg">{errors.proof}</div>}
                     </div>
 
-                    {/* Field 4: Pesan / Doa */}
+                    {/* Pesan */}
                     <div className="form-group">
                       <div className="label-row">
-                        <label htmlFor="donor-message" className="form-label">
-                          Pesan / Kata Dukungan <span className="optional-tag">(Opsional)</span>
+                        <label htmlFor="donor-msg" className="form-label">
+                          Pesan / Kata Dukungan <span className="label-hint">(Opsional)</span>
                         </label>
-                        <span className="char-counter">{message.length} / 300</span>
+                        <span className="label-hint">{message.length} / 300</span>
                       </div>
-                      <div className="textarea-wrapper">
-                        <textarea
-                          id="donor-message"
-                          className="form-textarea"
-                          placeholder="Tulis pesan, masukan fitur untuk Heka Edit, atau sekadar salam hangat..."
-                          maxLength={300}
-                          rows={3}
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                        />
-                      </div>
+                      <textarea
+                        id="donor-msg"
+                        className="form-textarea"
+                        placeholder="Tuliskan saran, doa, atau pesan hangat Anda..."
+                        maxLength={300}
+                        rows={3}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
                     </div>
 
-                    {/* Error Banner */}
+                    {/* Alert */}
                     {alertError && (
-                      <div className="form-alert alert-error" role="alert">
-                        <div className="alert-message">{alertError}</div>
+                      <div className="alert-box alert-danger">
+                        {alertError}
                       </div>
                     )}
 
-                    {/* Submit Button */}
-                    <div className="form-submit-row">
-                      <button
-                        type="submit"
-                        className="btn-submit"
-                        disabled={isSubmitting || isCompressing}
-                      >
-                        <span className="btn-text">
-                          {isSubmitting ? 'Mengirim & Memproses...' : 'Kirim Konfirmasi Donasi'}
-                        </span>
-                        {isSubmitting && (
-                          <span className="btn-spinner" aria-hidden="true">
-                            <span className="spinner-dot" />
-                            <span className="spinner-dot" />
-                            <span className="spinner-dot" />
-                          </span>
-                        )}
-                        {!isSubmitting && (
-                          <svg className="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="form-privacy-note">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                      <span>Data Anda dikirim secara aman langsung ke email tim HekaLabs tanpa disimpan di server pihak ketiga.</span>
-                    </div>
+                    {/* Submit */}
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-submit-main"
+                      disabled={isSubmitting || isCompressing}
+                    >
+                      {isSubmitting ? 'Mengirim Data...' : 'Kirim Konfirmasi Donasi'}
+                    </button>
                   </form>
                 ) : (
                   /* SUCCESS STATE */
-                  <div className="success-state-container">
-                    <div className="success-icon-wrap">
-                      <div className="success-ring">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-                      </div>
+                  <div className="success-container">
+                    <div className="success-check-circle">
+                      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
-                    <span className="tech-tag">// STATUS: TERKONFIRMASI</span>
                     <h3 className="success-title">
-                      Terima Kasih, <span className="highlight-text">{submittedData.name}</span>!
+                      Terima Kasih, {submittedData.name}!
                     </h3>
-                    <p className="success-lead">
-                      Konfirmasi donasi Anda sebesar <strong>Rp {formatRupiah(submittedData.amount)}</strong> telah berhasil kami terima.
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      Konfirmasi donasi Anda sebesar <strong>Rp {formatRupiah(submittedData.amount)}</strong> berhasil diterima.
                     </p>
-                    <div className="success-box">
-                      <p>Notifikasi email beserta bukti pembayaran telah diteruskan ke inbox <strong>hekoding@gmail.com</strong>.</p>
-                      <p className="success-sub">Dukungan Anda merupakan energi besar bagi keberlanjutan riset, konten edukasi, dan aplikasi open source kami.</p>
+                    <div className="success-body">
+                      Pemberitahuan telah otomatis diteruskan ke email <strong>hekoding@gmail.com</strong>.
+                      Dukungan Anda memberikan dorongan berharga bagi riset teknologi dan edukasi digital HekaLabs.
                     </div>
-                    <div className="success-actions">
-                      <button
-                        type="button"
-                        className="btn-pill btn-pill-outline"
-                        onClick={handleResetForm}
-                      >
-                        <span>Kirim Konfirmasi Lain</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={handleResetForm}
+                    >
+                      Kirim Donasi Lain
+                    </button>
                   </div>
                 )}
               </article>
 
-              {/* BENTO ITEM 3: MEDIA SOSIAL & JEJARING */}
-              <article className="bento-card bento-social-card" id="social-section">
-                <div className="social-card-header">
-                  <div className="social-header-meta">
-                    <span className="tech-tag">03-C. // KONEKSI &amp; JEJARING</span>
-                    <span className="status-indicator">
-                      <span className="pulse-dot green" aria-hidden="true" />
-                      <span className="status-text">KONTEN RUTIN AKTIF</span>
-                    </span>
-                  </div>
-                  <h2 className="card-heading">Media Sosial &amp; Ekosistem Heka</h2>
-                  <p className="card-subheading">
-                    Ikuti seluruh rilis karya, tutorial video editing, edukasi pemrograman, hingga keseharian kreator di kanal resmi berikut:
-                  </p>
+              {/* ITEM 3: MEDIA SOSIAL (Matching Heka Portfolio style) */}
+              <article className="content-card grid-social-col" id="social-section">
+                <div className="social-section-header">
+                  <h2>Media Sosial &amp; Komunitas</h2>
+                  <p>Ikuti perkembangan karya, tips koding, serta tutorial video editing terbaru:</p>
                 </div>
 
-                <div className="social-grid">
+                <div className="social-grid-portfolio">
                   {/* YouTube */}
                   <a
                     href="https://youtube.com/@Novemas12"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="YouTube @Novemas12"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon youtube-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
-                      </div>
-                      <span className="social-tag">YOUTUBE</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@Novemas12</span>
-                      <span className="social-desc">Kanal utama video tutorial, showcase proyek &amp; edukasi.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">YouTube</span>
+                      <span className="social-item-handle">@Novemas12</span>
                     </div>
                   </a>
 
-                  {/* Instagram 1: novemash3kaa */}
+                  {/* Instagram 1 */}
                   <a
                     href="https://instagram.com/novemash3kaa"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="Instagram @novemash3kaa"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon instagram-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
-                      </div>
-                      <span className="social-tag">INSTAGRAM</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@novemash3kaa</span>
-                      <span className="social-desc">Personal developer &amp; behind the scenes karya.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">Instagram (Personal)</span>
+                      <span className="social-item-handle">@novemash3kaa</span>
                     </div>
                   </a>
 
-                  {/* Instagram 2: hekaedit */}
+                  {/* Instagram 2 */}
                   <a
                     href="https://instagram.com/hekaedit"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="Instagram @hekaedit"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon instagram-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
-                      </div>
-                      <span className="social-tag">HEKA EDIT</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@hekaedit</span>
-                      <span className="social-desc">Preset, motion graphic, dan update aplikasi Heka Edit.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">Instagram (Editing)</span>
+                      <span className="social-item-handle">@hekaedit</span>
                     </div>
                   </a>
 
-                  {/* Instagram 3: hekaedu */}
+                  {/* Instagram 3 */}
                   <a
                     href="https://instagram.com/hekaedu"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="Instagram @hekaedu"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon instagram-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
-                      </div>
-                      <span className="social-tag">HEKA EDU</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@hekaedu</span>
-                      <span className="social-desc">Edukasi digital, koding, dan tips produktivitas.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">Instagram (Edukasi)</span>
+                      <span className="social-item-handle">@hekaedu</span>
                     </div>
                   </a>
 
-                  {/* TikTok 1: novemas_id */}
+                  {/* TikTok 1 */}
                   <a
                     href="https://tiktok.com/@novemas_id"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="TikTok @novemas_id"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon tiktok-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
-                      </div>
-                      <span className="social-tag">TIKTOK</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@novemas_id</span>
-                      <span className="social-desc">Tips pemrograman ringkas &amp; ide kreatif harian.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">TikTok (Koding)</span>
+                      <span className="social-item-handle">@novemas_id</span>
                     </div>
                   </a>
 
-                  {/* TikTok 2: hekaedit25 */}
+                  {/* TikTok 2 */}
                   <a
                     href="https://tiktok.com/@hekaedit25"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="TikTok @hekaedit25"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon tiktok-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
-                      </div>
-                      <span className="social-tag">TIKTOK</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@hekaedit25</span>
-                      <span className="social-desc">Tutorial video editing singkat dan template visual.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">TikTok (Editing)</span>
+                      <span className="social-item-handle">@hekaedit25</span>
                     </div>
                   </a>
 
-                  {/* TikTok 3: hecalisthenics */}
+                  {/* TikTok 3 */}
                   <a
                     href="https://tiktok.com/@hecalisthenics"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="TikTok @hecalisthenics"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon tiktok-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
-                      </div>
-                      <span className="social-tag">CALISTHENICS</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-.88-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 10.83 4.48c.03-.03.06-.06.08-.09.04-.04.07-.07.1-.11V10.7a8.16 8.16 0 0 0 5.58 2.19V9.43a4.85 4.85 0 0 1 0-2.74z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@hecalisthenics</span>
-                      <span className="social-desc">Aktivitas olahraga, calisthenics &amp; gaya hidup disiplin.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">TikTok (Calisthenics)</span>
+                      <span className="social-item-handle">@hecalisthenics</span>
                     </div>
                   </a>
 
-                  {/* Facebook: novemash3kaa */}
+                  {/* Facebook */}
                   <a
                     href="https://facebook.com/novemash3kaa"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card"
-                    aria-label="Facebook @novemash3kaa"
+                    className="social-card-item"
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon facebook-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                      </div>
-                      <span className="social-tag">FACEBOOK</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">@novemash3kaa</span>
-                      <span className="social-desc">Koneksi jaringan dan komunitas Facebook HekaLabs.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">Facebook</span>
+                      <span className="social-item-handle">@novemash3kaa</span>
                     </div>
                   </a>
 
-                  {/* GitHub: hekalabs-studio */}
+                  {/* GitHub */}
                   <a
                     href="https://github.com/hekalabs-studio"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="social-item-card social-item-github"
-                    aria-label="GitHub hekalabs-studio"
+                    className="social-card-item"
+                    style={{ gridColumn: '1 / -1' }}
                   >
-                    <div className="social-item-top">
-                      <div className="social-icon github-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
-                      </div>
-                      <span className="social-tag">GITHUB</span>
-                      <svg className="external-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
+                    <div className="social-round-icon" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
                     </div>
-                    <div className="social-item-main">
-                      <span className="social-handle">hekalabs-studio</span>
-                      <span className="social-desc">Repositori open source, tools, dan repositori proyek publik.</span>
+                    <div className="social-item-text">
+                      <span className="social-item-platform">GitHub</span>
+                      <span className="social-item-handle">hekalabs-studio</span>
                     </div>
                   </a>
                 </div>
               </article>
 
-              {/* BENTO ITEM 4: IMPACT & VALUE ALLOCATION */}
-              <article className="bento-card bento-impact-card">
-                <div className="impact-card-inner">
-                  <div className="impact-header">
-                    <span className="tech-tag">04-D. // ALOKASI DANA KARYA</span>
-                    <span className="badge-pill-subtle">TRANSPARANSI</span>
+              {/* ITEM 4: ALOKASI & PENGGUNAAN DANA */}
+              <article className="content-card impact-card grid-impact-col">
+                <h2>Alokasi Dana Karya</h2>
+                <div className="impact-items-list">
+                  <div className="impact-row">
+                    <span className="impact-icon-badge">1</span>
+                    <div className="impact-info">
+                      <strong>Heka Edit</strong>
+                      <p>Riset tool video editor ringan, preset kreatif, dan workflow grafis modern.</p>
+                    </div>
                   </div>
-                  <h2 className="impact-title">Ke Mana Donasi Anda Mengalir?</h2>
-                  <div className="impact-list">
-                    <div className="impact-item">
-                      <span className="impact-idx">01</span>
-                      <div className="impact-text">
-                        <strong>Pengembangan Heka Edit</strong>
-                        <p>Penyempurnaan fitur editor, aset motion graphic gratis, dan tool produktivitas video.</p>
-                      </div>
+                  <div className="impact-row">
+                    <span className="impact-icon-badge">2</span>
+                    <div className="impact-info">
+                      <strong>Heka Edu</strong>
+                      <p>Materi tutorial koding, tips web programming, dan video edukasi gratis.</p>
                     </div>
-                    <div className="impact-item">
-                      <span className="impact-idx">02</span>
-                      <div className="impact-text">
-                        <strong>Konten Edukasi Heka Edu</strong>
-                        <p>Produksi tutorial koding, web development, dan materi belajar gratis di media sosial.</p>
-                      </div>
+                  </div>
+                  <div className="impact-row">
+                    <span className="impact-icon-badge">3</span>
+                    <div className="impact-info">
+                      <strong>Open Source &amp; Tools</strong>
+                      <p>Pembuatan template kode gratis dan pustaka sumber terbuka di GitHub.</p>
                     </div>
-                    <div className="impact-item">
-                      <span className="impact-idx">03</span>
-                      <div className="impact-text">
-                        <strong>Perangkat Lunak Open Source</strong>
-                        <p>Maintenance library, template open-source, dan dokumentasi terbuka di GitHub.</p>
-                      </div>
-                    </div>
-                    <div className="impact-item">
-                      <span className="impact-idx">04</span>
-                      <div className="impact-text">
-                        <strong>Infrastruktur &amp; Cloud</strong>
-                        <p>Operasional server, domain, database, dan hosting untuk layanan publik HekaLabs.</p>
-                      </div>
+                  </div>
+                  <div className="impact-row">
+                    <span className="impact-icon-badge">4</span>
+                    <div className="impact-info">
+                      <strong>Server &amp; Cloud</strong>
+                      <p>Operasional domain dan hosting website mandiri.</p>
                     </div>
                   </div>
                 </div>
@@ -1061,31 +904,30 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="site-footer">
-        <div className="container footer-inner">
-          <div className="footer-top">
-            <div className="footer-brand-col">
-              <span className="footer-brand">HEKALABS ™</span>
-              <p className="footer-quote">
-                &ldquo;Bridging the space between bold concepts and digital reality.&rdquo;
+        <div className="container footer-inner-layout">
+          <div className="footer-top-row">
+            <div>
+              <span className="footer-brand">HEKALABS</span>
+              <p className="footer-tagline">
+                Dukungan karya digital independen • Novemas Heka Alfarizi
               </p>
-              <span className="tech-tag">// EST. 2025 • JAKARTA, INDONESIA</span>
             </div>
-            <div className="footer-thanks-col">
-              <span className="footer-kicker">CATATAN TERIMA KASIH</span>
-              <p className="footer-thanks-text">
-                Terima kasih tak terhingga kepada setiap donatur dan pendukung. Setiap rupiah yang Anda berikan adalah amanah yang kami konversikan menjadi karya, ilmu, dan kontribusi nyata bagi ekosistem digital terbuka.
-              </p>
+            <div className="footer-status-pill">
+              <span className="status-dot" />
+              <span>SISTEM QRIS OPERASIONAL</span>
             </div>
           </div>
 
-          <div className="footer-bottom">
-            <div className="footer-copy">
-              © 2026 HekaLabs. Seluruh hak cipta dilindungi.
-            </div>
-            <div className="footer-badge">
-              <span className="pulse-dot green" aria-hidden="true" />
-              <span>SISTEM QRIS NASIONAL OPERASIONAL</span>
-            </div>
+          <div className="footer-copy">
+            <span>© 2026 HekaLabs • Novemas Heka Alfarizi. Seluruh hak cipta dilindungi.</span>
+            <a
+              href="https://hekaportfolio.web.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+            >
+              hekaportfolio.web.app ↗
+            </a>
           </div>
         </div>
       </footer>
