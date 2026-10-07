@@ -525,7 +525,7 @@ export default function Home() {
                         type="text"
                         id="donor-name"
                         className="form-input"
-                        placeholder="Contoh: Budi Santoso / Nova"
+                        placeholder="Contoh: Novemas Heka Alfarizi"
                         minLength={2}
                         maxLength={60}
                         value={donorName}
