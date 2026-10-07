@@ -31,6 +31,7 @@ export default function Home() {
 
   // Form state
   const [donorName, setDonorName] = useState('');
+  const [donorEmail, setDonorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [amountInput, setAmountInput] = useState('');
   const [numericAmount, setNumericAmount] = useState(0);
@@ -219,6 +220,12 @@ export default function Home() {
       errs.name = 'Nama maksimal 60 karakter.';
     }
 
+    if (!donorEmail.trim()) {
+      errs.email = 'Email donatur wajib diisi.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donorEmail.trim())) {
+      errs.email = 'Format email tidak valid (contoh: nama@gmail.com).';
+    }
+
     if (!numericAmount || numericAmount < 1000) {
       errs.amount = 'Nominal donasi minimal Rp 1.000.';
     }
@@ -257,6 +264,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           name: donorName.trim(),
+          email: donorEmail.trim(),
           isAnonymous,
           amount: numericAmount,
           message: message.trim(),
@@ -285,6 +293,7 @@ export default function Home() {
 
   const handleResetForm = () => {
     setDonorName('');
+    setDonorEmail('');
     setIsAnonymous(false);
     setAmountInput('');
     setNumericAmount(0);
@@ -537,6 +546,30 @@ export default function Home() {
                         <span>Tampilkan sebagai donatur anonim (nama dirahasiakan di publik)</span>
                       </label>
                       {errors.name && <div className="field-error-msg">{errors.name}</div>}
+                    </div>
+
+                    {/* Email */}
+                    <div className="form-group">
+                      <div className="label-row">
+                        <label htmlFor="donor-email" className="form-label">
+                          Email Donatur <span className="req-star">*</span>
+                        </label>
+                        <span className="label-hint">Untuk konfirmasi &amp; ucapan terima kasih</span>
+                      </div>
+                      <input
+                        type="email"
+                        id="donor-email"
+                        className="form-input"
+                        placeholder="Contoh: nama@gmail.com"
+                        value={donorEmail}
+                        onChange={(e) => {
+                          setDonorEmail(e.target.value);
+                          if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+                        }}
+                        required
+                        autoComplete="email"
+                      />
+                      {errors.email && <div className="field-error-msg">{errors.email}</div>}
                     </div>
 
                     {/* Nominal */}
@@ -840,6 +873,22 @@ export default function Home() {
                     <div className="social-item-text">
                       <span className="social-item-platform">Facebook</span>
                       <span className="social-item-handle">@novemash3kaa</span>
+                    </div>
+                  </a>
+
+                  {/* WhatsApp Channel */}
+                  <a
+                    href="https://whatsapp.com/channel/0029VbAjJorDOQIYvJzZMV1r"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-card-item"
+                  >
+                    <div className="social-round-icon" aria-hidden="true" style={{ color: '#25D366' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.51c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.4-1.76-.15-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.13-.15.17-.25.25-.42.08-.17.04-.32-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.11-.23-.17-.48-.3"/></svg>
+                    </div>
+                    <div className="social-item-text">
+                      <span className="social-item-platform" style={{ color: '#25D366' }}>WhatsApp Channel</span>
+                      <span className="social-item-handle">Saluran Resmi Heka</span>
                     </div>
                   </a>
 

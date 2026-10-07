@@ -92,6 +92,15 @@ export async function POST(request) {
       );
     }
 
+    // 3b. Email validation
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { success: false, error: 'Format email tidak valid.' },
+        { status: 400 }
+      );
+    }
+
     // 4. Amount validation
     const amount = parseInt(body.amount, 10);
     if (isNaN(amount) || amount < 1000) {
@@ -217,6 +226,10 @@ export async function POST(request) {
           <td class="value">${escapeHtml(name)}</td>
         </tr>
         <tr>
+          <td class="label">EMAIL DONATUR</td>
+          <td class="value"><a href="mailto:${escapeHtml(email)}" style="color: #5aa7ff; text-decoration: underline;">${escapeHtml(email)}</a></td>
+        </tr>
+        <tr>
           <td class="label">STATUS PRIVASI</td>
           <td class="value">${isAnonymous ? 'Anonim (Nama Disembunyikan)' : 'Publik'}</td>
         </tr>
@@ -253,7 +266,7 @@ export async function POST(request) {
     const mailOptions = {
       from: `"HekaLabs Donasi" <${gmailUser}>`,
       to: 'hekoding@gmail.com',
-      replyTo: 'hekoding@gmail.com',
+      replyTo: email || 'hekoding@gmail.com',
       subject: `[HekaLabs Donasi] Rp ${formattedNominal} dari ${name}${isAnonymous ? ' (Anonim)' : ''}`,
       html: emailHtml,
       attachments: [
